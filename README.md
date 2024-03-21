@@ -872,10 +872,128 @@ Integration testing via test client however is specific.
 
 ---
 
-## Test Client
+## Kotest
 
-TODO...
+### Test Dependencies
 
+`io.kotest:kotest-assertions-core:5.8.1`
+`io.kotest:kotest-runner-junit5:5.8.1` // if you want to use junit
+
+Use latest version
+
+---
+
+## Testing simple get request
+
+Create the following test class (here I'm using kotlin.test.Test):
+
+```kotlin
+class SampleTests {
+    @Test
+    fun `test simple GET request`() = testApplication {
+        val response = client.get("/get_1")
+        response.status shouldBe HttpStatusCode.OK
+        response.headers[HttpHeaders.ContentType] shouldContain "text/plain"
+        response.bodyAsText() shouldBe "Get 1"
+    }
+}
 ```
 
+---
+
+### Configuring test application
+
+If you run the test - you get a 404 not found - why?
+
+It's because we have not configured the test application.
+
+Add the following to the testApplication block just above `val response`
+
+```kotlin
+application {
+    configureSimpleRequests()
+}
 ```
+
+Re-running the test now should pass
+
+---
+
+## Tests with content negotiation
+
+To test these - we need to install the server ContentNegotiation plugin to the test application and the client ContentNegotiation plugin in the test client.
+
+---
+
+## Start with the following test
+
+```kotlin
+    @Test
+    fun `test with content negotiation`() {
+    }
+```
+
+Now - let's build it block by block
+
+---
+
+### Mocking a repository
+
+We want to test thingies - so we'll need a service which will need a repository. We'll mock the repository with `mockk`
+
+```kotlin
+val repository = mockk<ThingyRepository>()
+
+every { repository.all() } returns listOf(Thingy(1, "Thing 1"))
+```
+
+---
+
+### testApplication and application
+
+Configure the application - here we'll need configureSerialization too (without it you'll get a 406 Not Acceptable)
+
+```kotlin
+testApplication {
+    application {
+        configureSerialization()
+        configureThingyRequests(ThingyService(repository))
+    }
+}
+```
+
+---
+
+### Test Client
+
+Inside test application let's get a client with client content negotiation
+
+```kotlin
+val client = createClient {
+    install(ContentNegotiation) {
+        json()
+    }
+}
+```
+
+Be sure to import client and not server ClientNegotiation
+
+---
+
+### Finally - the tests
+
+```kotlin
+val response = client.get("/thingies/")
+response.status shouldBe HttpStatusCode.OK
+response.headers[HttpHeaders.ContentType] shouldContain "application/json"
+
+val thingies = response.body<List<Thingy>>()
+thingies.size shouldBe 1
+thingies.first() shouldBe Thingy(1, "Thing 1")
+```
+
+---
+
+## Documentation
+
+[https://ktor.io/docs/testing.html](https://ktor.io/docs/testing.html)
