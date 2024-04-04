@@ -347,13 +347,13 @@ get("/queryParam") {
 
 ---
 
-## StatusPages
+## Status Pages
 
-StatusPages was installed by the starter code into the Routing file.
+The StatusPages plugin was installed by the starter code into the Routing file.
 
 At the minute it catches Throwable - and sends a 500.
 
-This can be customized to match any exception adn set any different HTTP status.
+This can be customized to match any exception and set any different HTTP status.
 
 Remember that routes can also return other codes than 200 - it doesn't have to go via StatusPages and exceptions.
 
@@ -365,9 +365,9 @@ So far - each of our module configuration plugins are independent.
 
 This is not common in a large application.
 
-Let's test out a sample with route that calls service that calls repository
+Let's test out a sample with a route that calls a service that calls a repository
 
-We'll use a mutable list as backend storage and the service will be a simple repository wrapper.
+We'll use a mutable list as backend storage in the repository and the service will be a simple repository wrapper just to keep things simple.
 
 ---
 
@@ -511,7 +511,7 @@ See Koin for example: [https://insert-koin.io/docs/reference/koin-ktor/ktor/](ht
 
 ## Clients
 
-WHat if we need to call out to other microservices?
+What if we need to call out to other microservices?
 
 Let's add a client.
 
@@ -583,6 +583,14 @@ Note that the get call on the client is a suspending function. Route blocks are 
 Ktor supports most of the common authentication mechanisms - but the one we use most often is JWT.
 
 We'll use the simplest form - just an auth token.
+
+---
+
+![fit](jwt.png)
+
+---
+
+## Dependencies
 
 Start with adding the following dependencies:
 

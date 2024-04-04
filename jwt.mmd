@@ -1,0 +1,39 @@
+%% mmdc -i jwt.mmd -o jwt.png -t forest -b lightgrey %%
+
+sequenceDiagram
+    box transparent Client
+        actor User
+    end
+    box transparent Ktor
+        participant Route
+        participant Service
+        participant Repository
+    end
+    User->>Route: Login with username and password
+    activate Route
+    Route->>Service: Check password
+    activate Service
+    Service->>Repository: Fetch hash based on username
+    activate Repository
+    Repository-->>Service: User's Hash
+    deactivate Repository
+    alt Hashed login password matches user's hash
+        Service-->Repository: Fetch claims for user
+        activate Repository
+        Repository-->>Service: User's claims
+        deactivate Repository
+        Service-->>Route: Create and return JWT with claims if hash match
+    else Hashed login password does not match user's hash
+        Service-->>Route: Error
+    end
+    deactivate Service
+    alt OK
+        Route-->>User: JWT
+    else Error
+        Route-->>User: 403
+    end
+    
+    deactivate Route
+
+    Note right of User: Time passes
+    User->>Route: Call - passing "Bearer JWT" in auth header
