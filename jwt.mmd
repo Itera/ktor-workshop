@@ -18,7 +18,7 @@ sequenceDiagram
     Repository-->>Service: User's Hash
     deactivate Repository
     alt Hashed login password matches user's hash
-        Service-->Repository: Fetch claims for user
+        Service->>Repository: Fetch claims for user
         activate Repository
         Repository-->>Service: User's claims
         deactivate Repository
