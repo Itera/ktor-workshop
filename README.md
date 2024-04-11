@@ -55,6 +55,12 @@ Choose to add some plugins - let's start with something basic
 
 Open the project in Idea.
 
+If using gradle and a late JDK - you might need to update the gradle wrapper:
+
+```shell
+./gradlew wrapper --gradle-version 8.7
+```
+
 Tidy each of the plugin files (remove any empty routing blocks).
 
 Check if it runs OK (run Application).
@@ -252,7 +258,9 @@ Remember to call it from your application.
 
 For larger systems - we may want a unique ID for a call that is used for calls on to other backends. A correlation ID.
 
-New dependency: `io.ktor:ktor-server-call-id`
+New dependency:
+
+`io.ktor:ktor-server-call-id`
 
 Add this to the logging plugin config
 
@@ -305,7 +313,9 @@ Edit the pattern in logback.xml - either add %X (whole MDC) or %X{call-id}
 
 Full support for just using the slf4j API is already present - but I prefer kotlin logging
 
-Dependency: `io.github.oshai:kotlin-logging-jvm:6.0.3` or latest
+Dependency:
+
+`io.github.oshai:kotlin-logging-jvm:6.0.3` or latest
 
 For any file we can create a static logger at the top:
 
@@ -424,6 +434,7 @@ class ThingyRepository {
         thingies.remove(thingy)
         thingy
     }
+}
 ```
 
 ---
@@ -517,11 +528,9 @@ Let's add a client.
 
 Dependencies:
 
-```
-implementation("io.ktor:ktor-client-core")
-implementation("io.ktor:ktor-client-cio")
-implementation("io.ktor:ktor-client-content-negotiation")
-```
+`io.ktor:ktor-client-core`
+`io.ktor:ktor-client-cio`
+`io.ktor:ktor-client-content-negotiation`
 
 There are multiple engines available for different platforms - here we've grabbed CIO
 
@@ -546,7 +555,13 @@ val catClient = HttpClient(CIO) {
         })
     }
 }
+```
 
+---
+
+### Model
+
+```kotlin
 @Serializable
 data class CatFact(
     val fact: String,
@@ -594,11 +609,9 @@ We'll use the simplest form - just an auth token.
 
 Start with adding the following dependencies:
 
-```kotlin
-io.ktor:ktor-server-auth-jvm
-io.ktor:ktor-server-auth-jwt-jvm
-com.password4j:password4j:1.8.1 // or latest
-```
+`io.ktor:ktor-server-auth-jvm`
+`io.ktor:ktor-server-auth-jwt-jvm`
+`com.password4j:password4j:1.8.1` // or latest
 
 ---
 
@@ -607,6 +620,12 @@ com.password4j:password4j:1.8.1 // or latest
 We need to be able to login with username and password, and get back a token.
 
 That token needs to include some claims.
+
+We need to have some model classes for login, token and claims.
+
+---
+
+### Model
 
 In model - create the following:
 
@@ -634,7 +653,7 @@ data class UserClaims(
 
 We need to be able to load some configuration.
 
-This is in two parts - application should load a configuration file.
+This is in two parts, and the existing configuration needs to change - the application should load a configuration file.
 
 The configuration file should have sensible (for development) defaults - but read values from the environment (for deployment)
 
@@ -685,7 +704,9 @@ The `${?FOO}` syntax means "overwrite from environment if found"
 
 ### psw4j.properties
 
-We need to tell Password4j what encryption we want.
+We need to tell Password4j what encryption we want it to use when creating password hashes.
+
+When reading hashes - the hash itself contains this information.
 
 Create the file src/main/resources/psw4j.properties
 
@@ -704,6 +725,8 @@ We're going to need a login route. That will need to be able to build a token:
 Add this to a login routing plugin file:
 
 ```kotlin
+private const val EXPIRY = 1000 * 60 * 20
+
 fun buildToken(
     config: ApplicationConfig,
     claims: UserClaims,
@@ -793,6 +816,39 @@ configureLoginRouting(userService)
 
 ---
 
+## Exception handling
+
+Currently an incorrect password is throwing a runtime exception and giving us a 500.
+
+We could just `call.respond(HttpStatusCode.Unauthorized)` - but let's use status pages.
+
+---
+
+### Exception
+
+Create the following exception somewhere (same file as status pages will do)
+
+```kotlin
+class FailedLogin(message: String) : Exception(message)
+```
+
+Then add a clause to the status pages block (will need to add a logger to the file too):
+
+```kotlin
+exception<FailedLogin> { call, cause ->
+    logger.error(cause) { "Login failed due to $cause" }
+    call.respond(HttpStatusCode.Unauthorized)
+}
+```
+
+---
+
+### Update the routing
+
+Now change the exception from RuntimeException to FailedLogin in the login routing block and fail to login again.
+
+---
+
 ## Using a token
 
 It's not a lot of use to have a token - if you can't use the token
@@ -805,10 +861,10 @@ This is in two parts - we need a configuration and a route block that is authent
 
 Yet another plugin file - Security
 
-This has two parts - a verifier:
+The configuration has two parts - a verifier which we can call to verify a token:
 
 ```kotlin
-fun jwtVerifier(config: ApplicationConfig): JWTVerifier =
+fun buildJwtVerifier(config: ApplicationConfig): JWTVerifier =
     JWT
         .require(Algorithm.HMAC256(config.property("jwt.secret").getString()))
         .withAudience(config.property("jwt.audience").getString())
@@ -818,7 +874,7 @@ fun jwtVerifier(config: ApplicationConfig): JWTVerifier =
 
 ---
 
-and an actual auth config called auth-jwt which also validates audience
+and an actual auth config called `auth-jwt` which also validates the audience from the token
 
 ```kotlin
 fun Application.configureSecurity() {
@@ -850,6 +906,8 @@ fun Application.configureSecurity() {
 ---
 
 ### Route block
+
+And finally - we can add a set of routes that require this auth to be used.
 
 Add this to the configureSecurity block after the authentication block:
 
@@ -886,14 +944,17 @@ Integration testing via test client however is specific.
 
 `io.kotest:kotest-assertions-core:5.8.1`
 `io.kotest:kotest-runner-junit5:5.8.1` // if you want to use junit
+`io.mockk:mockk-jvm:1.13.10`
 
-Use latest version
+Use latest versions
 
 ---
 
 ## Testing simple get request
 
-Create the following test class (here I'm using kotlin.test.Test):
+Create the following test class under src/test/kotlin (might need creating).
+
+Here I'm using kotlin.test.Test:
 
 ```kotlin
 class SampleTests {
@@ -913,7 +974,7 @@ class SampleTests {
 
 If you run the test - you get a 404 not found - why?
 
-It's because we have not configured the test application.
+It's because we have not configured any routing (or anything else) in the test application.
 
 Add the following to the testApplication block just above `val response`
 
@@ -936,9 +997,9 @@ To test these - we need to install the server ContentNegotiation plugin to the t
 ## Start with the following test
 
 ```kotlin
-    @Test
-    fun `test with content negotiation`() {
-    }
+@Test
+fun `test with content negotiation`() {
+}
 ```
 
 Now - let's build it block by block
@@ -974,7 +1035,7 @@ testApplication {
 
 ### Test Client
 
-Inside test application let's get a client with client content negotiation
+Inside test application - instead of using the default client - we need to configure one with client content negotiation.
 
 ```kotlin
 val client = createClient {
@@ -984,7 +1045,9 @@ val client = createClient {
 }
 ```
 
-Be sure to import client and not server ClientNegotiation
+Be sure to import client and not server ClientNegotiation.
+
+This gives a test application that has server content negotiation (from `configureSerialization()`) and a client with client content negotiation - so they should be able to negotiate.
 
 ---
 
