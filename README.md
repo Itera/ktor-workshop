@@ -879,7 +879,7 @@ and an actual auth config called `auth-jwt` which also validates the audience fr
 ```kotlin
 fun Application.configureSecurity() {
     val config = environment.config
-    val verifier = jwtVerifier(config)
+    val verifier = buildJwtVerifier(config)
 
     authentication {
         jwt("auth-jwt") {
