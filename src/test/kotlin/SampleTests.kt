@@ -20,16 +20,17 @@ import kotlin.test.Test
 
 class SampleTests {
     @Test
-    fun `test simple GET request`() = testApplication {
-        application {
-            configureSimpleRequests()
-        }
+    fun `test simple GET request`() =
+        testApplication {
+            application {
+                configureSimpleRequests()
+            }
 
-        val response = client.get("/get_1")
-        response.status shouldBe HttpStatusCode.OK
-        response.headers[HttpHeaders.ContentType] shouldContain "text/plain"
-        response.bodyAsText() shouldBe "Get 1"
-    }
+            val response = client.get("/get_1")
+            response.status shouldBe HttpStatusCode.OK
+            response.headers[HttpHeaders.ContentType] shouldContain "text/plain"
+            response.bodyAsText() shouldBe "Get 1"
+        }
 
     @Test
     fun `test with content negotiation`() {
@@ -43,11 +44,12 @@ class SampleTests {
                 configureThingyRequests(ThingyService(repository))
             }
 
-            val client = createClient {
-                install(ContentNegotiation) {
-                    json()
+            val client =
+                createClient {
+                    install(ContentNegotiation) {
+                        json()
+                    }
                 }
-            }
 
             val response = client.get("/thingies/")
             response.status shouldBe HttpStatusCode.OK

@@ -5,7 +5,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
@@ -18,7 +17,10 @@ import kotlinx.serialization.Serializable
 private val logger = KotlinLogging.logger {}
 
 @Serializable
-data class SimpleRequestBody(val name: String, val message: String)
+data class SimpleRequestBody(
+    val name: String,
+    val message: String,
+)
 
 fun Application.configureSimpleRequests() {
     routing {

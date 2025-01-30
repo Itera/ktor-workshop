@@ -5,7 +5,6 @@ import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
@@ -54,7 +53,7 @@ fun Application.configureSecurity() {
             authenticate("auth-jwt") {
                 get {
                     when (val principal = call.principal<JWTPrincipal>()) {
-                        null -> throw RuntimeException("Didn't find principal")
+                        null -> throw UserMissing("Didn't find principal")
                         else -> call.respondText(principal["username"] ?: "No username found")
                     }
                 }

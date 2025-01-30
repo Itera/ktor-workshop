@@ -33,7 +33,7 @@ slidenumbers: true
 - Choose
   - latest stable ktor version
   - CIO as engine
-  - Config in code
+  - Config in HOCON file
   - Uncheck sample code
 
 ---
@@ -58,8 +58,10 @@ Open the project in Idea.
 If using gradle and a late JDK - you might need to update the gradle wrapper:
 
 ```shell
-./gradlew wrapper --gradle-version 8.7
+./gradlew wrapper --gradle-version 8.12.1
 ```
+
+(use the latest version)
 
 Tidy each of the plugin files (remove any empty routing blocks).
 
@@ -651,40 +653,15 @@ data class UserClaims(
 
 ## Configuration
 
-We need to be able to load some configuration.
-
-This is in two parts, and the existing configuration needs to change - the application should load a configuration file.
+We need to be able to load some more configuration.
 
 The configuration file should have sensible (for development) defaults - but read values from the environment (for deployment)
 
 ---
 
-### Application
-
-Rebuild the `embeddedServer` in Application to look like this:
-
-```kotlin
-    val env = applicationEngineEnvironment {
-        connector {
-            host = "0.0.0.0"
-            port = 8080
-        }
-        config = ApplicationConfig("application.conf")
-        module {
-            module()
-        }
-    }
-
-    embeddedServer(CIO, env).start(wait = true)
-```
-
-This is the same as before with the additional load of application.conf
-
----
-
 ### application.conf
 
-Create this file in src/main/resources/application.conf
+Add this to the file src/main/resources/application.conf
 
 ```
 jwt {

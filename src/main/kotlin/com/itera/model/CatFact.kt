@@ -5,5 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CatFact(
     val fact: String,
-    val length: Int
+    val length: Int,
 )

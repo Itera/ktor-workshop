@@ -8,7 +8,6 @@ import com.itera.model.UserClaims
 import com.itera.service.UserService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -23,16 +22,15 @@ fun buildToken(
     config: ApplicationConfig,
     claims: UserClaims,
 ): String =
-    JWT.create()
+    JWT
+        .create()
         .withAudience(config.property("jwt.audience").getString())
         .withIssuer(config.property("jwt.issuer").getString())
         .withClaim("username", claims.username)
         .withExpiresAt(Date(System.currentTimeMillis() + EXPIRY))
         .sign(Algorithm.HMAC256(config.property("jwt.secret").getString()))
 
-fun Application.configureLoginRouting(
-    service: UserService,
-) {
+fun Application.configureLoginRouting(service: UserService) {
     val config = environment.config
 
     routing {
@@ -45,7 +43,7 @@ fun Application.configureLoginRouting(
                 throw FailedLogin("Invalid password")
             }
 
-            val claims = service.claims(loginRequest.username) ?: throw RuntimeException("Missing claims")
+            val claims = service.claims(loginRequest.username) ?: throw ClaimsMissing("Missing claims")
 
             call.respond(LoginResponse(token = buildToken(config, claims)))
         }

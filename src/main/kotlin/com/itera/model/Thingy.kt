@@ -5,5 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Thingy(
     val id: Int,
-    val name: String
+    val name: String,
 )

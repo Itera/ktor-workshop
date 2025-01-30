@@ -4,7 +4,6 @@ import com.itera.model.Thingy
 import com.itera.service.ThingyService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.delete
@@ -23,10 +22,11 @@ fun Application.configureThingyRequests(service: ThingyService) {
             get("/{id}") {
                 when (val id = call.parameters["id"]?.toInt()) {
                     null -> call.respond(HttpStatusCode.BadRequest)
-                    else -> when (val thingy = service.find(id)) {
-                        null -> call.respond(HttpStatusCode.NotFound)
-                        else -> call.respond(thingy)
-                    }
+                    else ->
+                        when (val thingy = service.find(id)) {
+                            null -> call.respond(HttpStatusCode.NotFound)
+                            else -> call.respond(thingy)
+                        }
                 }
             }
 
@@ -42,10 +42,11 @@ fun Application.configureThingyRequests(service: ThingyService) {
             delete("/") {
                 when (val id = call.request.queryParameters["id"]?.toInt()) {
                     null -> call.respond(HttpStatusCode.BadRequest)
-                    else -> when (val thingy = service.delete(id)) {
-                        null -> call.respond(HttpStatusCode.NotFound)
-                        else -> call.respond(thingy)
-                    }
+                    else ->
+                        when (val thingy = service.delete(id)) {
+                            null -> call.respond(HttpStatusCode.NotFound)
+                            else -> call.respond(thingy)
+                        }
                 }
             }
         }
